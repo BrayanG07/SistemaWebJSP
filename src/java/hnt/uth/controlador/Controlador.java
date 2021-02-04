@@ -5,6 +5,7 @@
  */
 package hnt.uth.controlador;
 
+import hn.uth.config.GenerarSerie;
 import hnt.uth.modelo.Cliente;
 import hnt.uth.modelo.ClienteDAO;
 import hnt.uth.modelo.Empleado;
@@ -12,6 +13,7 @@ import hnt.uth.modelo.EmpleadoDAO;
 import hnt.uth.modelo.Producto;
 import hnt.uth.modelo.ProductoDAO;
 import hnt.uth.modelo.Venta;
+import hnt.uth.modelo.VentaDAO;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -49,6 +51,9 @@ public class Controlador extends HttpServlet {
     int item, codigoProducto, cantidad;
     String descripcion;
     double precio, subtotal, totalPagar;
+    
+    String numeroSerie;
+    VentaDAO vdao = new VentaDAO();
     
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -207,17 +212,20 @@ public class Controlador extends HttpServlet {
                 case "BuscarCliente":
                     String dni = request.getParameter("CodigoCliente");
                     cl.setDni(dni);
-                    Cliente c = cldao.buscar(dni);
-                    request.setAttribute("c", c);
+                    cl = cldao.buscar(dni);
+                    request.setAttribute("c", cl);
                     break;
                 case "BuscarProducto":
                     int id = Integer.parseInt(request.getParameter("CodigoProducto"));
                     pr = prdao.listarId(id); //pr almacenara todo lo que esta listando el metodo listarId
+                    request.setAttribute("c", cl);//De esta manera no perdemos el cliente al dar click en buscar(Producto)
                     request.setAttribute("producto", pr);
                     //CON ESTO LA TABLA NO SE QUEDARA EN BLANCO CUANDO SE PRESIONE EL BOTON
                     request.setAttribute("lista", lista);
+                    request.setAttribute("totalPagar", this.totalPagar);
                     break;
                 case "Agregar":
+                    request.setAttribute("c", cl);
                     this.totalPagar = 0.0;
                     item = item + 1;
                     this.codigoProducto = pr.getIdProducto();
@@ -242,6 +250,18 @@ public class Controlador extends HttpServlet {
                     request.setAttribute("lista", lista);
                     break;
                 default:
+                    //00000001
+                    numeroSerie = vdao.generarSerie();//Almacenando el numero de serie maximo que hay en la BDD
+                    //0
+                    if (numeroSerie.equals("")) {//Si aun no tenemos ninguna venta en la BDD
+                        numeroSerie = "00000001";
+                        request.setAttribute("nSerie", numeroSerie);
+                    }else{
+                        int incrementar = Integer.parseInt(numeroSerie);//00000001
+                        GenerarSerie gs = new GenerarSerie();
+                        numeroSerie = gs.numeroSerie(incrementar);//000000002
+                        request.setAttribute("nSerie", numeroSerie);
+                    }
                     request.getRequestDispatcher("RegistrarVenta.jsp").forward(request, response);
             }
             request.getRequestDispatcher("RegistrarVenta.jsp").forward(request, response);
